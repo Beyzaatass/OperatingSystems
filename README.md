@@ -1,2 +1,2 @@
 # OperatingSystems
-İşletim Sistemleri
+İşletim Sistemleri Vize Ödevi
