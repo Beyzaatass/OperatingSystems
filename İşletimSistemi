@@ -1,0 +1,130 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <sys/errno.h>
+#define MAX_MUSTERI 25
+
+void *musteri(void *num);
+void *berber(void *);
+void beklemeSuresi(int sn);
+
+//semafor tanimlari
+//Bekleme Odası: bekleme salonuna musterilerin alinmasini saglar
+sem_t beklemeOdasi;
+
+
+//Berber Koltugu: berber koltuguna erisimi kontrol eder
+sem_t berberKoltugu;
+
+
+//Berber Uyku: berberin musteri yokken uyumasini saglar
+sem_t berberUyku;
+
+
+// Saç Kesim: berber sac keserken musterinin beklemesini saglar
+sem_t sacKesim;
+
+int allDone = 0;
+
+int main(int argc, char *argv[])
+       {
+          pthread_t btid;
+          pthread_t tid[MAX_MUSTERI];
+          long RandSeed;
+          int i, numMusteri, numKoltuk = 5;
+          int Number[MAX_MUSTERI];
+
+
+          numMusteri = atoi(argv[1]);          
+          RandSeed = atol(argv[2]);
+         
+          printf("uyuyan berber problemi");
+
+          srand48(RandSeed);
+
+          for(i=0; i<MAX_MUSTERI; i++)
+                Number[i] = i;
+         
+          sem_init(&beklemeOdasi,0,numKoltuk);
+          sem_init(&berberKoltugu,0,1);
+          sem_init(&berberUyku,0,0);
+          sem_init(&sacKesim,0,0);
+
+          //berber yaratiliyor
+          pthread_create(&btid,NULL,berber,NULL);
+          
+          //musteriler yaratiliyor
+          for(i=0; i<numMusteri; i++)
+                pthread_create(&tid[i], NULL, musteri,(void *)&Number[i]);
+
+          for(i=0; i<numMusteri; i++)
+                pthread_join(tid[i],NULL);
+
+          //tum musteriler sac kestirice berber threadi sonlandiriyor
+          allDone = 1;
+          sem_post(&berberUyku);
+          pthread_join(btid,NULL);
+    }
+void *musteri(void *number)
+       {
+          int num = *(int *)number;
+              num++;
+        
+          printf("%d. musteri berbere gitmek icin yola cikiyor\n",num);
+          beklemeSuresi(4);
+          printf("%d. musteri berbere geldi\n",num);
+
+          //bekleme odasinin bos olup olmadigi kontrol ediliyor
+          if(sem_trywait(&beklemeOdasi) == -1)
+               {
+                  printf("bekleme odasi dolu %d. musteri ayriliyor.\n",num);
+                  return 0;
+               }
+ 
+          printf("%d. musteri bekleme odasina girdi\n",num);
+          //bos yer acilana kadar bekleniyor
+          sem_wait(&berberKoltugu);
+		  
+          //musteri berber koltugu musasit olunca bekleme odasindaki yerini bosaltiyor
+          sem_post(&beklemeOdasi);
+		  
+          //berber uyandiriliyor
+          printf("%d. musteri berberi uyandiriyor.\n",num);
+          sem_post(&berberUyku);
+		  
+          //berber musterinin sacini kesene dek bekleniyor
+          sem_wait(&sacKesim);
+		  
+          //berber koltugu bosaltiliyor
+          sem_post(&berberKoltugu);
+		  
+          printf("%d. musteri berber dukkanindan ayriliyor\n",num);
+     }
+void *berber(void *junk)
+       {
+          while (!allDone)
+               {
+
+                   //musteri gelene denk berber uyuyor
+                   printf("berber uyuyor\n\n");
+                   sem_wait(&berberUyku);
+                   
+                   //isleri gerceklestiriyor
+                   if(!allDone)
+                       {
+                         printf("berber saci kesiyor\n");
+                        beklemeSuresi(6);
+                         printf("berber sac kesme islemini bitirdi.\n");
+                         //sac kesme islemi bitince musteri gonderiliyor
+                         sem_post(&sacKesim);
+                       }
+                    else printf("berber gunluk isini bitirdi eve gidiyor\n");
+                }
+       }
+void beklemeSuresi(int sn)
+       {
+           int len;
+           len = (int) ((drand48()*sn)+1);
+           sleep(len);
+       }
