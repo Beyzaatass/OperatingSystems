@@ -3,64 +3,88 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 #define READ_END 0 
-#define WRITE_END 1 
+#define WRITE_END 1
 
-int bitir=0;
-int kacinciHarf = -1;
-char read_msg[9999];
+int main(int argc, char *argv[]) {
+  
+  int fd[2];
+  pid_t pid;
+  FILE *fp;
+  fp = fopen(argv[1],"r");
+  int i = dosyaSize(argv[1]);
+  char write_msg[i];
+  char read_msg[i];
 
-int main(int argc, char *argv[]) 
-{ 
-  int fd[2] = {4,5};
-  close(fd[WRITE_END]);
-  read(fd[READ_END],read_msg,9999);
-  close(fd[READ_END]);
+  fread(write_msg, sizeof(char),sizeof(write_msg),fp);
+  
+   if(argc ==2)
+    { 
+      printf("%s",write_msg);
+      
+    }
 
-  char secim =' ';
-
-  while(bitir != 1)
-  {
-    if(secim == ' ')
-   {
-     char harf;
-     int kacinciSatir= 0;
-   
-     while(kacinciSatir < 24){
-     harf = read_msg[kacinciHarf];
-     kacinciHarf++;
-
-     if((read_msg[kacinciHarf+1] == '\0') && secim != 'q' && secim != 'Q') 
-        {
-         printf("\n*****Dosyanin sonu*****\n");
-         bitir++;
-          break;
-        }
-    else if(secim == 'q' || secim == 'Q')
-     break;
-    printf("%c",harf);
-
-    if(harf == '\n')
-       kacinciSatir++;
-  }
-  printf("\n");
-   }
-    
-    if(secim == 'q' || secim=='Q')
+    if(argc == 4)
+    {       
+      if(*argv[2] != '=')
       {
-       printf("\n*****Dosyadan okuma islemini iptal ettiniz*****\n");
-       break;
+        printf("Yanlis deger girdiniz");
       }
-if(read_msg[kacinciHarf+1] != '\0')
-{
-  printf("24 satir daha yazdirmak icin <SPACE>, cikis yapmak icin q tusuna basiniz: ");
-  scanf("%c",&secim);
-}
-  }
-  return 0; 
-}
+      
+      int fd[2]; 
+      pid_t pid; 
 
+      if(pipe(fd)==-1)
+      printf("pipe olusturulamadi");
+      else
+      printf("\nPipe olusturuldu!\n");
+
+      pid = fork();
+      if(pid < 0)
+        printf("fork olusturulamadi");
+
+      if(pid > 0)
+      {
+        close(fd[READ_END]);
+        write(fd[WRITE_END],write_msg,strlen(write_msg)+1);
+        close(fd[WRITE_END]);
+        wait(NULL);
+      }
+      else
+      { 
+        char m = "0"+ i;
+        char myMore[] = "./";
+        strncat(myMore, argv[3], sizeof(argv[3])); 
+        char *args[]={myMore,NULL}; 
+        execv(args[0],args);
+      }
+    }
+    else
+    {
+      printf("yanlis deger girdiniz");
+    }
+  
+  return 0;
+}
+ 
+int dosyaSize(char *argv[])
+{
+  int i;
+  FILE *fp;
+  fp = fopen(argv[1],"r");
+  if(fp=fopen(argv[1],"r"))
+   {
+    char karakter= fgetc(fp);
+    while(karakter != EOF)
+    {
+       karakter = fgetc(fp);
+       i++;
+    }
+   }
+return i;
+}
 
 
 
