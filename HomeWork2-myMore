@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+#define READ_END 0 
+#define WRITE_END 1 
+
+int bitir=0;
+int kacinciHarf = -1;
+char read_msg[9999];
+
+int main(int argc, char *argv[]) 
+{ 
+  int fd[2] = {4,5};
+  close(fd[WRITE_END]);
+  read(fd[READ_END],read_msg,9999);
+  close(fd[READ_END]);
+
+  char secim =' ';
+
+  while(bitir != 1)
+  {
+    if(secim == ' ')
+   {
+     char harf;
+     int kacinciSatir= 0;
+   
+     while(kacinciSatir < 24){
+     harf = read_msg[kacinciHarf];
+     kacinciHarf++;
+
+     if((read_msg[kacinciHarf+1] == '\0') && secim != 'q' && secim != 'Q') 
+        {
+         printf("\n*****Dosyanin sonu*****\n");
+         bitir++;
+          break;
+        }
+    else if(secim == 'q' || secim == 'Q')
+     break;
+    printf("%c",harf);
+
+    if(harf == '\n')
+       kacinciSatir++;
+  }
+  printf("\n");
+   }
+    
+    if(secim == 'q' || secim=='Q')
+      {
+       printf("\n*****Dosyadan okuma islemini iptal ettiniz*****\n");
+       break;
+      }
+if(read_msg[kacinciHarf+1] != '\0')
+{
+  printf("24 satir daha yazdirmak icin <SPACE>, cikis yapmak icin q tusuna basiniz: ");
+  scanf("%c",&secim);
+}
+  }
+  return 0; 
+}
+
+
+
+
